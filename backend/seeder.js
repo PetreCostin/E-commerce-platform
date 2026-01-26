@@ -147,10 +147,7 @@ const products = [
 const seedDatabase = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce');
 
     console.log('Connected to MongoDB');
 
@@ -162,7 +159,11 @@ const seedDatabase = async () => {
     console.log('Cleared existing data');
 
     // Insert users
-    const createdUsers = await User.insertMany(users);
+    const createdUsers = [];
+    for (const userData of users) {
+      const user = await User.create(userData);
+      createdUsers.push(user);
+    }
     console.log(`Created ${createdUsers.length} users`);
 
     // Insert products
