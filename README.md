@@ -21,6 +21,16 @@ A secure, scalable full-stack e-commerce platform built with Spring Boot and Rea
 - Authentication: JWT
 - DevOps: Docker & GitHub Actions
 
+## 🔧 Technologies Used
+
+- **Frontend**: React (Vite)
+- **Backend**: Java Spring Boot
+- **Database**: PostgreSQL
+- **Authentication**: JWT
+- **DevOps**: Docker, GitHub Actions
+- **Package Managers**: npm, Maven
+- **Languages**: JavaScript, Java
+
 ## 🔐 Security
 
 ### Application Security
