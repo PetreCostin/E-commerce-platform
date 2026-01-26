@@ -1,0 +1,90 @@
+# Dependabot configuration for automatic dependency updates and security vulnerability detection
+# This file configures Dependabot to monitor and update dependencies across multiple ecosystems
+
+version: 2
+updates:
+  # Monitor npm dependencies (React frontend)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "PetreCostin"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "npm"
+      include: "scope"
+    # Group minor and patch updates to reduce PR noise
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Monitor Maven dependencies (Spring Boot backend)
+  - package-ecosystem: "maven"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "PetreCostin"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "maven"
+      include: "scope"
+    groups:
+      spring-dependencies:
+        patterns:
+          - "org.springframework*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Monitor Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "PetreCostin"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "security"
+    commit-message:
+      prefix: "docker"
+
+  # Monitor GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "PetreCostin"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
