@@ -1,6 +1,7 @@
 package com.ecommerce.platform.exception;
 
 import com.ecommerce.platform.dto.ApiResponse;
+import jakarta.persistence.OptimisticLockException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,6 +22,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
         ApiResponse response = new ApiResponse(false, ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ApiResponse> handleInsufficientStockException(InsufficientStockException ex, WebRequest request) {
+        ApiResponse response = new ApiResponse(false, ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(OptimisticLockException.class)
+    public ResponseEntity<ApiResponse> handleOptimisticLockException(OptimisticLockException ex, WebRequest request) {
+        ApiResponse response = new ApiResponse(false, "The item was modified by another user. Please try again.");
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(BadCredentialsException.class)

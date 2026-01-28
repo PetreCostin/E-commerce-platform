@@ -75,21 +75,52 @@ export DB_URL=jdbc:postgresql://localhost:5432/ecommerce_db
 export DB_USERNAME=postgres
 export DB_PASSWORD=your_secure_password
 
-# JWT Configuration
+# JWT Configuration (REQUIRED in production)
 export JWT_SECRET=your_256_bit_secret_key_here
 export JWT_EXPIRATION=86400000
 
 # CORS Configuration
 export ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4200
+
+# JPA Configuration
+export DDL_AUTO=validate  # use 'validate' in production, 'update' in development
+export SHOW_SQL=false     # set to 'false' in production
+
+# Logging Configuration
+export LOG_LEVEL=INFO           # use INFO or WARN in production
+export SECURITY_LOG_LEVEL=WARN  # use WARN in production
 ```
+
+### Spring Profiles
+
+The application supports different profiles for different environments:
+
+**Development Profile (`dev`):**
+```bash
+java -jar platform-1.0.0.jar --spring.profiles.active=dev
+```
+- Uses `spring.jpa.hibernate.ddl-auto=update`
+- Enables SQL logging
+- Sets DEBUG logging level
+
+**Production Profile (`prod`):**
+```bash
+java -jar platform-1.0.0.jar --spring.profiles.active=prod
+```
+- Uses `spring.jpa.hibernate.ddl-auto=validate`
+- Disables SQL logging
+- Sets INFO/WARN logging levels
 
 ### Default Configuration
 
 If environment variables are not set, the application uses these defaults (suitable for development only):
 - Database: `localhost:5432/ecommerce_db` with username `postgres` and password `postgres`
-- JWT Secret: Default value (change in production!)
+- JWT Secret: Default value (**⚠️ MUST be changed in production!**)
 - JWT Expiration: 24 hours (86400000 ms)
 - Allowed Origins: `http://localhost:3000,http://localhost:4200`
+- DDL Auto: `update`
+- Show SQL: `false`
+- Log Level: `INFO`
 
 ## Getting Started
 
@@ -115,8 +146,15 @@ CREATE DATABASE ecommerce_db;
 3. Navigate to the backend directory
 4. Run the application:
 
+**Development:**
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+**Production:**
+```bash
+mvn clean package
+java -jar target/platform-1.0.0.jar --spring.profiles.active=prod
 ```
 
 The application will start on `http://localhost:8080`
@@ -153,6 +191,16 @@ The application seeds the following on first run:
 - Product entity uses `@Version` annotation
 - Prevents race conditions during concurrent order creation
 - Ensures inventory consistency
+- Automatic retry mechanism (up to 3 attempts) on OptimisticLockException
+- Returns HTTP 409 CONFLICT if concurrent modification detected
+
+### Exception Handling
+- Custom exceptions for specific error scenarios:
+  - `ResourceNotFoundException` for missing resources (HTTP 404)
+  - `InsufficientStockException` for inventory issues (HTTP 400)
+  - `OptimisticLockException` for concurrent modifications (HTTP 409)
+- Global exception handler with meaningful error messages
+- Validation error responses with field-level details
 
 ### Input Validation
 - All DTOs use Jakarta Validation annotations
@@ -175,15 +223,21 @@ The JAR file will be created in `target/platform-1.0.0.jar`
 ## Production Deployment Checklist
 
 - [ ] Change default admin password
-- [ ] Set strong JWT secret (minimum 256 bits)
-- [ ] Configure production database credentials
-- [ ] Set appropriate CORS allowed origins
+- [ ] Set strong JWT secret (minimum 256 bits) via JWT_SECRET environment variable
+- [ ] Configure production database credentials via environment variables
+- [ ] Set appropriate CORS allowed origins via ALLOWED_ORIGINS
+- [ ] Use production profile: `--spring.profiles.active=prod`
+- [ ] Set `DDL_AUTO=validate` to prevent schema changes
+- [ ] Disable SQL logging: `SHOW_SQL=false`
+- [ ] Set appropriate log levels: `LOG_LEVEL=INFO`, `SECURITY_LOG_LEVEL=WARN`
 - [ ] Enable HTTPS/TLS
-- [ ] Configure proper logging levels
+- [ ] Configure proper logging levels and log aggregation
 - [ ] Set up database backups
 - [ ] Configure connection pooling
 - [ ] Set up monitoring and alerting
 - [ ] Review and harden security settings
+- [ ] Add rate limiting and DDoS protection
+- [ ] Implement API versioning strategy
 
 ## License
 

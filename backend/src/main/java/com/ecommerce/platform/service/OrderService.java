@@ -2,12 +2,16 @@ package com.ecommerce.platform.service;
 
 import com.ecommerce.platform.dto.OrderDTO;
 import com.ecommerce.platform.dto.OrderItemDTO;
+import com.ecommerce.platform.exception.InsufficientStockException;
 import com.ecommerce.platform.exception.ResourceNotFoundException;
 import com.ecommerce.platform.model.*;
 import com.ecommerce.platform.repository.CartItemRepository;
 import com.ecommerce.platform.repository.OrderRepository;
 import com.ecommerce.platform.repository.ProductRepository;
 import com.ecommerce.platform.repository.UserRepository;
+import jakarta.persistence.OptimisticLockException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +26,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class OrderService {
 
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+
     @Autowired
     private OrderRepository orderRepository;
 
@@ -35,12 +42,28 @@ public class OrderService {
     private UserRepository userRepository;
 
     public OrderDTO createOrder(Long userId, String shippingAddress) {
+        int attempts = 0;
+        while (attempts < MAX_RETRY_ATTEMPTS) {
+            try {
+                return attemptCreateOrder(userId, shippingAddress);
+            } catch (OptimisticLockException e) {
+                attempts++;
+                if (attempts >= MAX_RETRY_ATTEMPTS) {
+                    throw new RuntimeException("Unable to process order after " + MAX_RETRY_ATTEMPTS + " attempts. Please try again.");
+                }
+                logger.warn("Optimistic lock exception during order creation, attempt {}/{}", attempts, MAX_RETRY_ATTEMPTS);
+            }
+        }
+        throw new RuntimeException("Unable to process order");
+    }
+
+    private OrderDTO attemptCreateOrder(Long userId, String shippingAddress) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         List<CartItem> cartItems = cartItemRepository.findByUserId(userId);
         if (cartItems.isEmpty()) {
-            throw new RuntimeException("Cart is empty");
+            throw new InsufficientStockException("Cart is empty");
         }
 
         Order order = new Order();
@@ -53,7 +76,7 @@ public class OrderService {
             Product product = cartItem.getProduct();
 
             if (product.getStockQuantity() < cartItem.getQuantity()) {
-                throw new RuntimeException("Insufficient stock for product: " + product.getName());
+                throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
             }
 
             OrderItem orderItem = new OrderItem();
