@@ -1,0 +1,156 @@
+.order-detail-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+}
+
+.back-button:hover {
+  text-decoration: underline;
+}
+
+.order-detail-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 2rem;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+  margin-bottom: 2rem;
+}
+
+.order-header h1 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.order-date {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.order-status {
+  font-weight: bold;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+}
+
+.order-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section h2 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.item-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.item-description {
+  margin: 0 0 0.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.item-quantity {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.item-pricing {
+  text-align: right;
+}
+
+.item-unit-price {
+  margin: 0 0 0.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.item-total-price {
+  margin: 0;
+  color: #27ae60;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.address {
+  color: #666;
+  line-height: 1.6;
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.summary-row.total {
+  font-size: 1.5rem;
+  color: #333;
+  padding-top: 1rem;
+  border-top: 2px solid #ddd;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .item-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .item-pricing {
+    text-align: left;
+  }
+}
