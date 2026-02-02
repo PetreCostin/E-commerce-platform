@@ -273,7 +273,3 @@ VITE_API_URL=https://api.yourdomain.com
 ## 📄 License
 
 This project is licensed under the MIT License.
-
-## 📄 License
-
-This project is licensed under the MIT License.

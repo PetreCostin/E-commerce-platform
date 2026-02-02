@@ -59,8 +59,8 @@ ON CONFLICT DO NOTHING;
 
 -- Insert sample orders
 INSERT INTO orders (user_id, total_amount, status, shipping_address) VALUES
-((SELECT id FROM users WHERE username = 'john_doe'), 199.98, 'DELIVERED', '123 Main St, New York, NY 10001'),
-((SELECT id FROM users WHERE username = 'john_doe'), 79.99, 'SHIPPED', '123 Main St, New York, NY 10001'),
+((SELECT id FROM users WHERE username = 'john_doe'), 199.95, 'DELIVERED', '123 Main St, New York, NY 10001'),
+((SELECT id FROM users WHERE username = 'john_doe'), 199.99, 'SHIPPED', '123 Main St, New York, NY 10001'),
 ((SELECT id FROM users WHERE username = 'jane_smith'), 149.97, 'PROCESSING', '456 Oak Ave, Los Angeles, CA 90001'),
 ((SELECT id FROM users WHERE username = 'bob_wilson'), 89.99, 'PENDING', '789 Pine Rd, Chicago, IL 60601');
 
