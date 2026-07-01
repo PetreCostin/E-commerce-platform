@@ -1,209 +1,117 @@
-# Implementation Summary: E-Commerce Platform Structure
+# Implementation Summary
 
 ## Overview
-Successfully created a comprehensive project structure for the E-Commerce platform with all required technologies, ensuring GitHub properly detects and displays the language composition.
 
-## Files Created
+This document summarises the delivered implementation of the E-Commerce Platform and records the changes made to bring code, configuration, and documentation into a consistent state.
 
-### Frontend (React + Vite) - 11 files
-- **package.json** - React 18, Vite 5, React Router, Axios dependencies
-- **vite.config.js** - Vite configuration with proxy setup
-- **index.html** - HTML entry point
-- **src/main.jsx** - Application entry point
-- **src/App.jsx** - Main app component with routing
-- **src/App.css** - Global styles
-- **src/index.css** - Base CSS
-- **src/components/Home.jsx** - Landing page component
-- **src/components/Products.jsx** - Product catalog with search
-- **src/components/Login.jsx** - Authentication component
-- **Dockerfile** - Multi-stage build with Node.js and nginx
-- **frontend/README.md** - Frontend documentation
+---
 
-### Backend (Spring Boot) - 19 files
-- **pom.xml** - Maven configuration with Spring Boot 3.2, Security, JPA, PostgreSQL
-- **EcommerceApplication.java** - Main application class
-- **config/SecurityConfig.java** - Security configuration with BCrypt, JWT, RBAC
-- **controller/AuthController.java** - Authentication endpoints
-- **controller/ProductController.java** - Product CRUD operations
-- **controller/OrderController.java** - Order management
-- **model/User.java** - User entity with UserDetails
-- **model/Product.java** - Product entity
-- **model/Order.java** - Order entity
-- **model/OrderItem.java** - Order line items
-- **repository/UserRepository.java** - User data access
-- **repository/ProductRepository.java** - Product data access
-- **repository/OrderRepository.java** - Order data access
-- **service/UserService.java** - User business logic with BCrypt hashing
-- **service/ProductService.java** - Product business logic
-- **service/OrderService.java** - Order business logic
-- **application.properties** - Database and application configuration
-- **Dockerfile** - Multi-stage build with Maven and JRE
-- **backend/README.md** - Backend documentation
+## Delivered Features
 
-### Database (PostgreSQL) - 3 files
-- **schema.sql** - Complete database schema with tables, indexes, triggers
-- **seeds.sql** - Sample data for development/testing
-- **database/README.md** - Database documentation
+### Frontend (React 18 + Vite 5)
 
-### DevOps - 4 files
-- **docker-compose.yml** - Local development setup (frontend, backend, postgres)
-- **.github/workflows/ci-cd.yml** - CI/CD pipeline with builds, tests, Docker, security
-- **.github/dependabot.yml** - Already existed, verified npm and Maven monitoring
-- **.github/workflows/codeql.yml** - Already existed, verified security scanning
+| Feature | Status |
+|---|---|
+| User login (real JWT from backend) | ✅ |
+| User registration | ✅ |
+| Product catalog (fetched from backend) | ✅ |
+| Product search / filter | ✅ |
+| Shopping cart (quantity management) | ✅ |
+| Checkout (creates order on backend) | ✅ |
+| Order history | ✅ |
+| Order cancellation | ✅ |
+| Protected routes (redirect to login) | ✅ |
+| Automatic 401 → login redirect | ✅ |
+| Logout | ✅ |
 
-## Language Statistics
+### Backend (Spring Boot 3.3 + Java 17)
 
-Based on file counts:
-- **Java**: 15 files (Spring Boot backend)
-- **JavaScript**: 6 files (React frontend)
-- **SQL**: 2 files (PostgreSQL schema and seeds)
-- **YAML**: 3 files (GitHub Actions workflows)
-- **Dockerfile**: 2 files (Frontend and Backend containers)
+| Feature | Status |
+|---|---|
+| Real JWT generation on login (jjwt 0.12) | ✅ |
+| JWT validation filter (`JwtAuthenticationFilter`) | ✅ |
+| BCrypt password hashing (strength 12) | ✅ |
+| User registration with duplicate checks | ✅ |
+| RBAC (`ROLE_USER`, `ROLE_ADMIN`) | ✅ |
+| Product CRUD (Admin-only writes) | ✅ |
+| Order creation / cancellation | ✅ |
+| Order history per user | ✅ |
+| Admin order status updates | ✅ |
+| JSON serialization safe (no lazy-load recursion) | ✅ |
+| CORS driven by environment variable | ✅ |
 
-## Technology Features Implemented
+### Database (PostgreSQL 16)
 
-### Frontend
-✅ React 18 with modern hooks
-✅ Vite for fast development and builds
-✅ React Router for client-side routing
-✅ Axios for API communication
-✅ JWT token authentication
-✅ Component-based architecture
-✅ Multi-stage Docker build
+| Feature | Status |
+|---|---|
+| Schema defined in `database/schema.sql` | ✅ |
+| Seed data in `database/seeds.sql` | ✅ |
+| Auto-loaded by Docker Compose | ✅ |
+| `ddl-auto=validate` (Hibernate validates against existing schema) | ✅ |
 
-### Backend
-✅ Spring Boot 3.2
-✅ Spring Security with JWT
-✅ BCrypt password hashing (strength 12)
-✅ Role-based access control (RBAC)
-✅ Spring Data JPA with PostgreSQL
-✅ RESTful API design
-✅ Input validation with Jakarta Bean Validation
-✅ CORS configuration
-✅ Environment variable configuration
-✅ Multi-stage Docker build
+---
 
-### Database
-✅ PostgreSQL 16 schema
-✅ Normalized table structure (users, products, orders, order_items)
-✅ Primary and foreign key constraints
-✅ Check constraints for data integrity
-✅ Indexes for performance
-✅ Triggers for automatic timestamp updates
-✅ Sample seed data
+## Key Changes Made
 
-### DevOps
-✅ Docker Compose for local development
-✅ Multi-stage Dockerfiles for optimized images
-✅ CI/CD pipeline with GitHub Actions
-✅ Automated builds for frontend and backend
-✅ Security scanning with Trivy
-✅ Dependabot for dependency updates
-✅ CodeQL for code security scanning
+### 1. Spring Boot Version
 
-## Security Features
+`pom.xml` declared `spring-boot-starter-parent 4.1.0` which does not exist. Updated to **3.3.5** (a current stable release). All documentation updated from the incorrect "3.2" claim to "3.3".
 
-1. **Authentication & Authorization**
-   - JWT token-based authentication
-   - BCrypt password hashing (strength 12)
-   - Role-based access control (RBAC)
-   - Stateless session management
+### 2. Real JWT Implementation
 
-2. **API Security**
-   - CORS configuration for frontend integration
-   - Input validation on all endpoints
-   - Protected endpoints with @PreAuthorize
-   - Public endpoints for product browsing
+- Created `com.ecommerce.security.JwtTokenProvider` – generates and validates HMAC-SHA256 signed tokens using the `jwt.secret` property.
+- Created `com.ecommerce.security.JwtAuthenticationFilter` – a `OncePerRequestFilter` that extracts the `Authorization: ****** header, validates the token, and populates the `SecurityContext`.
+- Updated `SecurityConfig` to inject and register the filter via `addFilterBefore(...)`.
+- Updated `AuthController.login(...)` to call `jwtTokenProvider.generateToken(authentication)` instead of returning `"mock-jwt-token"`.
 
-3. **Infrastructure Security**
-   - Least-privilege GitHub Actions permissions
-   - Multi-stage Docker builds
-   - Non-root user in Docker containers
-   - Environment variable configuration
-   - .dockerignore files to exclude sensitive data
+### 3. Frontend – Real API Calls
 
-4. **Automated Security**
-   - CodeQL scanning for vulnerabilities
-   - Dependabot for dependency updates
-   - Trivy security scanning in CI/CD
-   - Secret scanning enabled
+- Added `src/api/index.js` – an Axios instance with a request interceptor (attaches JWT) and response interceptor (redirects on 401).
+- `Login.jsx` – replaced mock logic with a real `POST /api/auth/login` call.
+- `Products.jsx` – replaced hard-coded mock data with a real `GET /api/products` call. Added stock-aware "Add to Cart" / "Out of Stock" UI.
 
-## Security Notes
+### 4. New Frontend Components
 
-### CSRF Protection
-The backend disables CSRF protection, which is appropriate for this stateless REST API using JWT tokens:
-- JWT tokens are sent in Authorization headers (not cookies)
-- This inherently protects against CSRF attacks
-- Tokens must be explicitly included in each request
-- For session-based authentication, CSRF should be enabled
+- `Register.jsx` – registration form calling `POST /api/auth/register`.
+- `Orders.jsx` – order history via `GET /api/orders/my-orders`; cancel button for PENDING orders.
+- `Cart.jsx` – cart state, quantity controls, and checkout form that calls `POST /api/orders`.
 
-This approach is documented in the SecurityConfig class with clear comments.
+### 5. Application Configuration
 
-## Build Verification
+- `spring.jpa.hibernate.ddl-auto` changed from `update` to `validate`. The schema is managed by `database/schema.sql`; Hibernate should only validate, not auto-mutate.
+- Security logging reduced from `DEBUG` to `WARN` to avoid flooding logs in normal operation.
 
-✅ Maven build: SUCCESS
-✅ Java compilation: SUCCESS
-✅ Code review: PASSED (no issues)
-✅ Security scan: 1 expected alert (CSRF disabled for JWT API - documented)
+### 6. CORS
 
-## Language Detection
+Removed hard-coded origin lists from `SecurityConfig`; origins are now read from the `app.cors.allowed-origins` property (backed by the `ALLOWED_ORIGINS` environment variable).
 
-GitHub will now properly detect and display:
-- **Java** (Backend Spring Boot code)
-- **JavaScript** (Frontend React code)
-- **SQL** (Database schema and seeds)
-- **YAML** (GitHub Actions workflows)
-- **Dockerfile** (Container definitions)
+### 7. Docker Compose
 
-## API Endpoints
+- `JWT_SECRET` changed from a hard-coded string to `${JWT_SECRET:-changeme-use-a-strong-secret-in-production-min32chars}` so it can be overridden without editing the file.
+- `DB_PASSWORD` parameterised similarly.
+- Added inline comment warning about changing the secret for production.
 
-### Public
-- POST /api/auth/register - User registration
-- POST /api/auth/login - User login
-- GET /api/products - List products
-- GET /api/products/{id} - Get product
+### 8. CI/CD (`ci-cd.yml`)
 
-### Authenticated (ROLE_USER)
-- GET /api/auth/me - Current user
-- GET /api/orders/my-orders - User's orders
-- POST /api/orders - Create order
-- PATCH /api/orders/{id}/cancel - Cancel order
+- Removed `|| true` from `npm run lint` and `mvn test` – failures now correctly fail the workflow.
+- Combined Maven build+test into `mvn clean verify` for the backend job (previously `mvn clean package -DskipTests` + separate `mvn test || true`).
+- Fixed `cache-dependency-path` to `frontend/package-lock.json` (the lock file now exists).
 
-### Admin (ROLE_ADMIN)
-- POST /api/products - Create product
-- PUT /api/products/{id} - Update product
-- DELETE /api/products/{id} - Delete product
-- GET /api/orders - List all orders
-- PATCH /api/orders/{id}/status - Update order status
+### 9. Documentation
 
-## Default Credentials
+- `README.md` – corrected Spring Boot version, removed "Flyway/Liquibase ready" claim (no migration tool is configured), documented actual env variables, added frontend test note.
+- `backend/README.md` – corrected Spring Boot version, documented JWT flow, updated project structure.
+- `frontend/README.md` – documented all real components and API usage.
+- `SECURITY.md` – replaced incorrect "CSRF protection for state-changing ops" claim with accurate explanation of why CSRF is intentionally disabled for this stateless JWT API.
 
-For testing (included in seeds.sql):
-- Admin: admin / password123
-- User: john_doe / password123
+---
 
-## Next Steps for Production
+## Known Limitations / Deferred Items
 
-1. Change default passwords
-2. Set secure JWT_SECRET environment variable
-3. Configure HTTPS/TLS
-4. Set up proper database backups
-5. Configure monitoring and logging
-6. Set up container registry for Docker images
-7. Configure production database
-8. Set up reverse proxy (nginx/Traefik)
-9. Enable rate limiting
-10. Configure proper CORS origins
-
-## Conclusion
-
-The E-commerce platform now has a complete, production-ready structure with:
-- Modern frontend (React + Vite)
-- Robust backend (Spring Boot + Security)
-- Relational database (PostgreSQL)
-- Container orchestration (Docker Compose)
-- CI/CD automation (GitHub Actions)
-- Security scanning and dependency management
-- Comprehensive documentation
-
-All files follow best practices and are properly configured for GitHub language detection.
+| Item | Notes |
+|---|---|
+| Frontend unit/e2e tests | No test suite exists; `npm test` is not configured. README documents this. CI runs only lint + build. |
+| Database migrations (Flyway/Liquibase) | Not configured. Schema is managed via `database/schema.sql`. The "Flyway/Liquibase ready" claim has been removed from docs. |
+| Admin UI | Admin operations (product create/update/delete, order status) are backend-only; no admin frontend pages are implemented. |
+| Token refresh | JWT tokens expire after 24 h (configurable via `jwt.expiration`). No refresh-token flow is implemented. |
+| HTTPS / TLS | Not configured at the application level; add a reverse proxy (nginx / Traefik) with TLS termination for production. |

@@ -1,23 +1,18 @@
-import React, { useState } from 'react'
-import axios from 'axios'
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import api from '../api/index.js'
 
 /**
- * Login component - User authentication
- * Handles JWT token authentication with backend
+ * Login component – authenticates via the backend JWT endpoint.
  */
 function Login({ setIsAuthenticated, setUser }) {
-  const [formData, setFormData] = useState({
-    username: '',
-    password: ''
-  })
+  const [formData, setFormData] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
   const handleSubmit = async (e) => {
@@ -26,24 +21,14 @@ function Login({ setIsAuthenticated, setUser }) {
     setLoading(true)
 
     try {
-      // In production, this would call the backend authentication API
-      // const response = await axios.post('/api/auth/login', formData)
-      // localStorage.setItem('jwtToken', response.data.token)
-      // setIsAuthenticated(true)
-      // setUser(response.data.user)
-
-      // Mock authentication for demonstration
-      if (formData.username && formData.password) {
-        const mockToken = 'mock-jwt-token-' + Date.now()
-        localStorage.setItem('jwtToken', mockToken)
-        setIsAuthenticated(true)
-        setUser({ username: formData.username })
-        window.location.href = '/'
-      } else {
-        setError('Please enter both username and password')
-      }
+      const response = await api.post('/auth/login', formData)
+      const { token, username } = response.data
+      localStorage.setItem('jwtToken', token)
+      setIsAuthenticated(true)
+      setUser({ username })
+      navigate('/')
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.')
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }
@@ -54,7 +39,7 @@ function Login({ setIsAuthenticated, setUser }) {
       <div className="login-card">
         <h2>Login</h2>
         {error && <div className="error-message">{error}</div>}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="username">Username</label>
@@ -83,12 +68,12 @@ function Login({ setIsAuthenticated, setUser }) {
           </div>
 
           <button type="submit" disabled={loading} className="submit-button">
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Logging in…' : 'Login'}
           </button>
         </form>
 
         <p className="signup-link">
-          Don't have an account? <a href="/register">Sign up</a>
+          Don&apos;t have an account? <Link to="/register">Sign up</Link>
         </p>
       </div>
     </div>

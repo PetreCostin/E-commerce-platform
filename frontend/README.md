@@ -1,28 +1,29 @@
 # E-Commerce Frontend
 
-React-based frontend for the E-Commerce platform built with Vite.
+React SPA for the E-Commerce platform, built with Vite.
 
 ## Technologies
 
-- **React 18** - Modern React with hooks
-- **Vite** - Fast build tool and dev server
-- **React Router** - Client-side routing
-- **Axios** - HTTP client for API calls
+- **React 18** – hooks-based UI
+- **Vite 5** – fast build tool and dev server
+- **React Router 6** – client-side routing
+- **Axios** – HTTP client with JWT interceptor
 
 ## Features
 
-- User authentication with JWT tokens
-- Product catalog with search and filtering
-- Shopping cart functionality
-- Order management
-- Responsive design
+- User registration and login (JWT)
+- Product catalog with live search and filtering
+- Shopping cart with quantity management
+- Checkout flow (creates an order on the backend)
+- Order history with cancellation
+- Protected routes (orders require authentication)
+- Automatic redirect to login on `401` responses
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- npm or yarn
+- Node.js 18+
 
 ### Installation
 
@@ -32,26 +33,22 @@ npm install
 
 ### Development
 
-Run the development server:
-
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`
+App available at `http://localhost:3000`. Vite proxies `/api/*` to `http://localhost:8080` so the backend can run separately.
+
+### Lint
+
+```bash
+npm run lint
+```
 
 ### Build
 
-Create a production build:
-
 ```bash
 npm run build
-```
-
-### Preview Production Build
-
-```bash
-npm run preview
 ```
 
 ## Project Structure
@@ -59,51 +56,57 @@ npm run preview
 ```
 frontend/
 ├── src/
-│   ├── components/     # React components
-│   │   ├── Home.jsx
-│   │   ├── Products.jsx
-│   │   └── Login.jsx
-│   ├── App.jsx         # Main app component
-│   ├── main.jsx        # Entry point
-│   └── App.css         # Styles
-├── public/             # Static assets
-├── index.html          # HTML template
-├── package.json        # Dependencies
-└── vite.config.js      # Vite configuration
+│   ├── api/
+│   │   └── index.js        # Axios instance with JWT auth interceptor
+│   ├── components/
+│   │   ├── Home.jsx         # Landing page
+│   │   ├── Login.jsx        # Login form (real backend call)
+│   │   ├── Register.jsx     # Registration form
+│   │   ├── Products.jsx     # Product catalog (backend API)
+│   │   ├── Cart.jsx         # Shopping cart & checkout
+│   │   └── Orders.jsx       # Order history
+│   ├── App.jsx              # Routing, auth state, cart state
+│   ├── App.css              # Global styles
+│   └── main.jsx             # Entry point
+├── index.html
+├── package.json
+└── vite.config.js
 ```
 
 ## API Integration
 
-The frontend communicates with the Spring Boot backend API running on port 8080.
+The frontend communicates with the Spring Boot backend.
 
-API endpoints:
-- `POST /api/auth/login` - User authentication
-- `POST /api/auth/register` - User registration
-- `GET /api/products` - List all products
-- `GET /api/products/:id` - Get product details
-- `POST /api/orders` - Create an order
-- `GET /api/orders/my-orders` - Get user's orders
+During development the Vite dev server proxies `/api` to `http://localhost:8080` (configured in `vite.config.js`). In production (Docker), nginx serves the static build and the same `/api` prefix is proxied to the backend container.
+
+Key endpoints used:
+
+| Endpoint                  | Usage                         |
+|---------------------------|-------------------------------|
+| `POST /api/auth/login`    | Login                         |
+| `POST /api/auth/register` | Registration                  |
+| `GET  /api/products`      | Product listing               |
+| `POST /api/orders`        | Checkout                      |
+| `GET  /api/orders/my-orders` | Order history              |
+| `PATCH /api/orders/{id}/cancel` | Cancel order            |
 
 ## Environment Variables
 
-Create a `.env` file for environment-specific configuration:
+Create a `.env` file to override the API base URL (optional – the Vite proxy handles local development automatically):
 
 ```env
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=https://api.yourdomain.com/api
 ```
 
 ## Docker
-
-Build and run with Docker:
 
 ```bash
 docker build -t ecommerce-frontend .
 docker run -p 80:80 ecommerce-frontend
 ```
 
-## Security
+## Security Notes
 
-- JWT tokens stored in localStorage
-- CORS configured for backend communication
-- Input validation on forms
-- Protected routes for authenticated users
+- JWT tokens are stored in `localStorage` and attached to all API requests via an Axios request interceptor.
+- On a `401` response the interceptor clears the token and redirects to `/login`.
+- Input fields have `autoComplete` attributes set for browser credential management support.
