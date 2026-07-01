@@ -4,24 +4,23 @@ Spring Boot REST API for the E-Commerce platform.
 
 ## Technologies
 
-- **Java 17** - Programming language
-- **Spring Boot 3.2** - Application framework
-- **Spring Security** - Authentication and authorization
-- **Spring Data JPA** - Database access
-- **PostgreSQL** - Relational database
-- **JWT** - Token-based authentication
-- **BCrypt** - Password hashing
-- **Maven** - Build tool and dependency management
+- **Java 17**
+- **Spring Boot 3.3** – application framework
+- **Spring Security** – JWT authentication filter, RBAC
+- **Spring Data JPA** – database access layer
+- **PostgreSQL** – relational database
+- **jjwt 0.12** – JWT generation & validation
+- **BCrypt (strength 12)** – password hashing
+- **Maven** – build tool
 
 ## Features
 
 - RESTful API design
-- JWT authentication
+- Real JWT authentication (generated on login, validated on every protected request)
 - BCrypt password hashing
-- Role-based access control (RBAC)
-- Input validation
-- Exception handling
-- CORS configuration
+- Role-based access control (RBAC: `ROLE_USER`, `ROLE_ADMIN`)
+- Input validation with Jakarta Bean Validation
+- CORS configuration via environment variable
 - PostgreSQL integration
 - Docker support
 
@@ -29,42 +28,40 @@ Spring Boot REST API for the E-Commerce platform.
 
 ### Prerequisites
 
-- Java 17 or higher
-- Maven 3.9 or higher
-- PostgreSQL 14 or higher
+- Java 17+
+- Maven 3.9+
+- PostgreSQL 14+ (or start via Docker Compose from the repo root)
 
-### Installation
+### Database Setup
 
 ```bash
-mvn clean install
+psql -U postgres -d ecommerce_db -f ../database/schema.sql
+psql -U postgres -d ecommerce_db -f ../database/seeds.sql
 ```
 
 ### Configuration
 
-Update `src/main/resources/application.properties` or use environment variables:
+`src/main/resources/application.properties` uses environment variable substitution with safe local defaults.
+Override via environment variables or a `.env` file for Docker:
 
 ```properties
-# Database
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=ecommerce_db
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
-
-# JWT
-JWT_SECRET=your-secret-key-here
-
-# CORS
+JWT_SECRET=your-secret-key-at-least-32-chars
 ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 ### Run Application
 
 ```bash
+cd backend
 mvn spring-boot:run
 ```
 
-The API will be available at `http://localhost:8080`
+API available at `http://localhost:8080`.
 
 ## Project Structure
 
@@ -73,87 +70,79 @@ backend/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/ecommerce/
-│   │   │   ├── controller/      # REST controllers
-│   │   │   ├── service/         # Business logic
-│   │   │   ├── repository/      # Data access
-│   │   │   ├── model/           # Entity classes
-│   │   │   ├── config/          # Configuration
+│   │   │   ├── config/          # SecurityConfig (filter chain, CORS, RBAC)
+│   │   │   ├── controller/      # AuthController, ProductController, OrderController
+│   │   │   ├── model/           # User, Product, Order, OrderItem entities
+│   │   │   ├── repository/      # Spring Data JPA repositories
+│   │   │   ├── security/        # JwtTokenProvider, JwtAuthenticationFilter
+│   │   │   ├── service/         # UserService, ProductService, OrderService
 │   │   │   └── EcommerceApplication.java
 │   │   └── resources/
 │   │       └── application.properties
-│   └── test/                    # Test classes
-└── pom.xml                      # Maven configuration
+│   └── test/
+└── pom.xml
 ```
 
 ## API Endpoints
 
 ### Authentication
 
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login and get JWT token
-- `GET /api/auth/me` - Get current user info
+| Method | Endpoint             | Description                       |
+|--------|----------------------|-----------------------------------|
+| POST   | `/api/auth/register` | Register new user                 |
+| POST   | `/api/auth/login`    | Login – returns JWT token         |
+| GET    | `/api/auth/me`       | Get current authenticated user    |
 
 ### Products
 
-- `GET /api/products` - List all active products
-- `GET /api/products/{id}` - Get product by ID
-- `GET /api/products/search?name={query}` - Search products
-- `GET /api/products/category/{category}` - Get products by category
-- `POST /api/products` - Create product (Admin only)
-- `PUT /api/products/{id}` - Update product (Admin only)
-- `DELETE /api/products/{id}` - Delete product (Admin only)
+| Method | Endpoint                          | Auth   | Description              |
+|--------|-----------------------------------|--------|--------------------------|
+| GET    | `/api/products`                   | Public | List all active products |
+| GET    | `/api/products/{id}`              | Public | Get product by ID        |
+| GET    | `/api/products/search?name=query` | Public | Search products by name  |
+| GET    | `/api/products/category/{cat}`    | Public | Filter by category       |
+| POST   | `/api/products`                   | Admin  | Create product           |
+| PUT    | `/api/products/{id}`              | Admin  | Update product           |
+| DELETE | `/api/products/{id}`              | Admin  | Delete product           |
 
 ### Orders
 
-- `GET /api/orders` - List all orders (Admin only)
-- `GET /api/orders/my-orders` - Get current user's orders
-- `GET /api/orders/{id}` - Get order by ID
-- `POST /api/orders` - Create new order
-- `PATCH /api/orders/{id}/status` - Update order status (Admin only)
-- `PATCH /api/orders/{id}/cancel` - Cancel order
+| Method | Endpoint                    | Auth  | Description                  |
+|--------|-----------------------------|-------|------------------------------|
+| GET    | `/api/orders`               | Admin | List all orders              |
+| GET    | `/api/orders/my-orders`     | User  | Get current user's orders    |
+| GET    | `/api/orders/{id}`          | User  | Get order by ID              |
+| POST   | `/api/orders`               | User  | Create new order             |
+| PATCH  | `/api/orders/{id}/cancel`   | User  | Cancel an order              |
+| PATCH  | `/api/orders/{id}/status`   | Admin | Update order status          |
 
 ## Security
 
-### Authentication
+### JWT Authentication Flow
 
-The application uses JWT (JSON Web Tokens) for authentication:
-
-1. User logs in with credentials
-2. Server validates and returns JWT token
-3. Client includes token in Authorization header for subsequent requests
-4. Server validates token for each protected endpoint
+1. Client posts credentials to `POST /api/auth/login`
+2. Server validates credentials via `DaoAuthenticationProvider`
+3. `JwtTokenProvider` issues a signed JWT (HMAC-SHA256, configurable expiry)
+4. Client stores the token and sends `Authorization: ****** on subsequent requests
+5. `JwtAuthenticationFilter` (a `OncePerRequestFilter`) validates the token and populates the `SecurityContext`
 
 ### Password Security
 
-- Passwords are hashed using BCrypt (strength 12)
-- Never store plain text passwords
-- Password validation enforces minimum length
+- BCrypt with strength 12
+- Plain-text passwords are never stored or logged
 
-### Role-Based Access Control (RBAC)
+### Role-Based Access Control
 
-Two roles are supported:
-- `ROLE_USER` - Regular users (can browse products, place orders)
-- `ROLE_ADMIN` - Administrators (full access including product management)
+| Role         | Permissions                                      |
+|--------------|--------------------------------------------------|
+| `ROLE_USER`  | Browse products, place/cancel own orders         |
+| `ROLE_ADMIN` | All user permissions + manage products and orders|
 
-### CORS Configuration
+### CORS
 
-CORS is configured to allow requests from the frontend application.
-
-## Database
-
-The application uses PostgreSQL for data persistence. Schema and seed data are in the `database/` directory.
-
-### Initialize Database
-
-```bash
-createdb ecommerce_db
-psql -U postgres -d ecommerce_db -f ../database/schema.sql
-psql -U postgres -d ecommerce_db -f ../database/seeds.sql
-```
+Origins are read from the `app.cors.allowed-origins` property (comma-separated). Set the `ALLOWED_ORIGINS` environment variable to change them.
 
 ## Testing
-
-Run tests:
 
 ```bash
 mvn test
@@ -161,32 +150,13 @@ mvn test
 
 ## Docker
 
-Build and run with Docker:
-
 ```bash
 docker build -t ecommerce-backend .
 docker run -p 8080:8080 \
   -e DB_HOST=postgres \
-  -e DB_PORT=5432 \
   -e DB_NAME=ecommerce_db \
   -e DB_USERNAME=postgres \
   -e DB_PASSWORD=postgres \
+  -e JWT_SECRET=your-secret \
   ecommerce-backend
 ```
-
-## Development
-
-### Code Style
-
-- Follow Java naming conventions
-- Use meaningful variable and method names
-- Add JavaDoc comments for public APIs
-- Keep methods focused and concise
-
-### Best Practices
-
-- Use constructor injection for dependencies
-- Validate input data
-- Handle exceptions appropriately
-- Write unit tests for business logic
-- Use transactions for data modifications

@@ -1,4 +1,3 @@
-import React from 'react'
 
 /**
  * Home component - Landing page for the E-commerce platform

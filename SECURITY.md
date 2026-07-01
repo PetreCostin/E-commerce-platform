@@ -2,139 +2,95 @@
 
 ## 🔐 Reporting a Vulnerability
 
-We take the security of the E-Commerce Platform seriously. If you have discovered a security vulnerability, we appreciate your help in disclosing it to us in a responsible manner.
-
-### How to Report a Security Vulnerability
+We take the security of the E-Commerce Platform seriously. If you have discovered a security vulnerability, please disclose it responsibly.
 
 **Please DO NOT report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them using one of the following methods:
+Instead, use one of the following methods:
 
-1. **Preferred Method**: Report via GitHub Security Advisories
-   - Navigate to the [Security tab](https://github.com/PetreCostin/E-commerce-platform/security/advisories) of this repository
-   - Click "Report a vulnerability"
-   - Fill out the form with details about the vulnerability
+1. **Preferred**: GitHub Security Advisories – navigate to the [Security tab](https://github.com/PetreCostin/E-commerce-platform/security/advisories), click "Report a vulnerability", and fill out the form.
+2. **Alternative**: Email the repository owner with "SECURITY" in the subject line.
 
-2. **Alternative Method**: Email
-   - Send an email to the repository owner with details about the vulnerability
-   - Include "SECURITY" in the subject line
-   - You can find the contact information in the repository owner's GitHub profile
+### What to Include
 
-### What to Include in Your Report
-
-Please include the following information to help us better understand and resolve the issue:
-
-- **Type of vulnerability** (e.g., SQL injection, XSS, authentication bypass, etc.)
-- **Full paths of source file(s)** related to the vulnerability
-- **Location of the affected source code** (tag/branch/commit or direct URL)
-- **Step-by-step instructions to reproduce** the issue
-- **Proof-of-concept or exploit code** (if possible)
-- **Impact of the vulnerability** and how an attacker might exploit it
-- **Suggested fix** (if you have one)
+- Type of vulnerability (e.g. SQL injection, authentication bypass)
+- Affected file paths, tags/branches/commits
+- Step-by-step reproduction instructions
+- Proof-of-concept or exploit code (if available)
+- Suggested fix (if you have one)
 
 ### Response Timeline
 
-- **Initial Response**: We will acknowledge receipt of your vulnerability report within **3 business days**
-- **Status Updates**: We will provide regular updates on our progress at least every **7 days**
-- **Resolution Timeline**: We aim to resolve critical vulnerabilities within **30 days** of disclosure
-- **Disclosure**: We will work with you to determine an appropriate disclosure timeline
+| Stage            | Target       |
+|------------------|--------------|
+| Acknowledgement  | 3 business days |
+| Status updates   | Every 7 days |
+| Critical fix     | 30 days      |
 
-### What to Expect
-
-1. We will confirm the receipt of your vulnerability report
-2. We will investigate and validate the vulnerability
-3. We will work on a fix and may ask for additional information
-4. We will notify you when the vulnerability is fixed
-5. We will publicly acknowledge your responsible disclosure (if you wish)
-
-## 🛡️ Security Measures in Place
-
-This platform implements multiple security layers:
+## 🛡️ Security Measures
 
 ### Authentication & Authorization
-- **JWT-based authentication** with secure token management
-- **Role-based access control (RBAC)** for admin and user separation
-- **BCrypt password hashing** with appropriate salt rounds
-- **Session management** with token expiration
+
+- **JWT-based authentication** – tokens are signed with HMAC-SHA256 and validated on every request by `JwtAuthenticationFilter`
+- **BCrypt password hashing** – strength 12; plain-text passwords are never stored or logged
+- **Stateless sessions** – no server-side session state; `SessionCreationPolicy.STATELESS`
+- **Role-based access control (RBAC)** – `ROLE_USER` and `ROLE_ADMIN` enforced via `@PreAuthorize` and the security filter chain
+
+### CSRF
+
+CSRF protection is **intentionally disabled** for this stateless REST API.
+
+The API uses JWT tokens sent in the `Authorization: ****** request header. Because the token is stored in `localStorage` (not in a cookie), browsers do not automatically attach it to cross-origin requests. This means the standard CSRF attack vector does not apply, and disabling Spring's CSRF filter is the correct and documented approach for stateless JWT APIs.
+
+If you add cookie-based session authentication to this application in the future, re-enable CSRF protection.
 
 ### Input Validation
-- **Server-side validation** for all user inputs
-- **SQL injection prevention** using parameterized queries
-- **XSS protection** with input sanitization and output encoding
-- **CSRF protection** for state-changing operations
 
-### Data Protection
-- **Encryption in transit** using HTTPS/TLS
-- **Sensitive data encryption** at rest
-- **Secure database credentials** management
-- **Environment variable protection** for secrets
+- All user inputs are validated server-side with Jakarta Bean Validation (`@Valid`, `@NotBlank`, `@Email`, `@Size`, etc.)
+- JPA parameterized queries prevent SQL injection
+
+### CORS
+
+- Allowed origins are read from the `app.cors.allowed-origins` environment variable (comma-separated)
+- Default value covers local development only (`localhost:3000`, `localhost:5173`)
+- Set `ALLOWED_ORIGINS` to your production domain before deploying
+
+### Secrets Management
+
+- The `JWT_SECRET` is read from the `JWT_SECRET` environment variable at runtime
+- Docker Compose ships a placeholder default value; **override it in production** via a `.env` file or your secrets manager
+- Sensitive defaults are **never** hard-coded in production code paths
 
 ### Dependency Management
-- **Dependabot** automated dependency updates
-- **Regular security audits** of third-party libraries
-- **CodeQL scanning** for vulnerability detection
-- **Secret scanning** to prevent credential leaks
 
-### Infrastructure Security
-- **Docker containerization** for isolation
-- **Principle of least privilege** for service accounts
-- **Network segmentation** between services
-- **Regular security updates** for base images
+- Dependabot monitors npm, Maven, Docker, and GitHub Actions dependencies
+- CodeQL scans Java and JavaScript code for security issues
+- Trivy scans the file system for known CVEs in CI
 
 ## 📋 Supported Versions
 
-We provide security updates for the following versions:
-
 | Version | Supported          |
-| ------- | ------------------ |
-| Latest  | :white_check_mark: |
-| < Latest| :x:                |
+|---------|--------------------|
+| Latest  | ✅                 |
+| < Latest| ❌                 |
 
-We recommend always using the latest version to ensure you have all security patches.
+Always use the latest version to ensure all security patches are included.
 
 ## 🔒 Security Best Practices for Contributors
 
-If you're contributing to this project:
-
-1. **Never commit secrets** (API keys, passwords, tokens) to the repository
-2. **Use environment variables** for sensitive configuration
+1. **Never commit secrets** (API keys, passwords, tokens)
+2. **Use environment variables** for all sensitive configuration
 3. **Keep dependencies up to date** and review Dependabot PRs promptly
-4. **Follow secure coding practices**:
-   - Validate and sanitize all inputs
-   - Use parameterized queries
-   - Implement proper error handling without exposing sensitive information
-   - Follow the principle of least privilege
-5. **Review CodeQL scan results** and address any identified issues
-6. **Write security tests** for authentication and authorization features
-7. **Document security-relevant changes** in pull requests
+4. **Validate and sanitize** all user inputs server-side
+5. **Follow the principle of least privilege** for roles and service accounts
+6. **Document security-relevant changes** in pull requests
 
-## 📚 Additional Security Resources
+## �� Resources
 
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
-- [Spring Security Documentation](https://spring.io/projects/spring-security)
-- [React Security Best Practices](https://react.dev/learn/keeping-components-pure)
-- [Docker Security Best Practices](https://docs.docker.com/develop/security-best-practices/)
-
-## 🏆 Security Hall of Fame
-
-We would like to thank the following individuals for responsibly disclosing security vulnerabilities:
-
-<!-- This section will be updated as security researchers report vulnerabilities -->
-
-*No vulnerabilities have been reported yet.*
-
-## 📝 Security Disclosure Policy
-
-We follow a **coordinated disclosure** process:
-
-1. Security researcher reports vulnerability privately
-2. We validate and develop a fix
-3. We release the security patch
-4. After the patch is widely deployed (typically 30 days), we publicly disclose the vulnerability
-5. We credit the researcher (with their permission)
-
-Thank you for helping keep the E-Commerce Platform and our users safe!
+- [Spring Security Reference](https://docs.spring.io/spring-security/reference/)
+- [OWASP JWT Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html)
 
 ---
 
-**Last Updated**: January 2026
+**Last Updated**: July 2026

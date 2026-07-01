@@ -1,6 +1,7 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.model.User;
+import com.ecommerce.security.JwtTokenProvider;
 import com.ecommerce.service.UserService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -15,31 +16,29 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 /**
- * REST Controller for authentication endpoints
- * Handles user registration, login, and JWT token generation
+ * REST Controller for authentication endpoints.
+ * Handles user registration, login, and JWT token generation.
  */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "${app.cors.allowed-origins:http://localhost:3000}")
 public class AuthController {
 
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
-    // Note: JwtTokenProvider would be injected here in a complete implementation
+    private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * Register a new user
-     * Password is hashed using BCrypt before storage
-     * 
+     * Register a new user.
+     * Password is hashed using BCrypt before storage.
+     *
      * @param user the user registration data
-     * @return ResponseEntity with registered user
+     * @return ResponseEntity with the registered user (password omitted)
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody User user) {
         try {
             User registeredUser = userService.registerUser(user);
-            // Remove password from response
             registeredUser.setPassword(null);
             return ResponseEntity.status(HttpStatus.CREATED).body(registeredUser);
         } catch (RuntimeException e) {
@@ -48,15 +47,14 @@ public class AuthController {
     }
 
     /**
-     * Authenticate user and generate JWT token
-     * 
+     * Authenticate user and return a signed JWT token.
+     *
      * @param loginRequest the login credentials
-     * @return ResponseEntity with JWT token
+     * @return ResponseEntity with JWT token and username
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
-            // Authenticate user
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getUsername(),
@@ -66,9 +64,7 @@ public class AuthController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // In a complete implementation, generate JWT token here
-            // String token = jwtTokenProvider.generateToken(authentication);
-            String token = "mock-jwt-token"; // Placeholder
+            String token = jwtTokenProvider.generateToken(authentication);
 
             return ResponseEntity.ok(new JwtResponse(token, loginRequest.getUsername()));
         } catch (Exception e) {
@@ -78,15 +74,15 @@ public class AuthController {
     }
 
     /**
-     * Get current authenticated user
-     * 
-     * @return ResponseEntity with current user
+     * Get the currently authenticated user.
+     *
+     * @return ResponseEntity with the current user (password omitted)
      */
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()) {
-            User user = (User) authentication.getPrincipal();
+        if (authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof User user) {
             user.setPassword(null);
             return ResponseEntity.ok(user);
         }
@@ -94,7 +90,8 @@ public class AuthController {
                 .body(new ErrorResponse("Not authenticated"));
     }
 
-    // DTOs
+    // ── DTOs ──────────────────────────────────────────────────────────────────
+
     @Data
     static class LoginRequest {
         private String username;
@@ -103,21 +100,12 @@ public class AuthController {
 
     @Data
     static class JwtResponse {
-        private String token;
-        private String username;
-
-        public JwtResponse(String token, String username) {
-            this.token = token;
-            this.username = username;
-        }
+        private final String token;
+        private final String username;
     }
 
     @Data
     static class ErrorResponse {
-        private String message;
-
-        public ErrorResponse(String message) {
-            this.message = message;
-        }
+        private final String message;
     }
 }
